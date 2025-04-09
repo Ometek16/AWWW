@@ -1,0 +1,25 @@
+<div class="w-[70%] mx-auto mt-10">
+  <div class="grid grid-cols-3 gap-6">
+    {% for image in images %}
+      <div class="relative overflow-hidden rounded-3xl shadow-lg transform transition-all duration-500 hover:scale-110 hover:brightness-110 hover:grayscale-0 hover:rotate-[5deg]">
+        <div class="aspect-[4/3] bg-gray-200 flex items-center justify-center relative">
+          <img src="{{ image.image.url }}" alt="Image {{ forloop.counter }}" class="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105 filter brightness-75 group-hover:brightness-100 group-hover:grayscale-0" />
+          <div class="absolute inset-0 bg-black bg-opacity-60 text-white flex items-center justify-center text-lg font-semibold px-4 transition-all duration-300 transform group-hover:opacity-100 opacity-0">
+            {{ image.caption }}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Upload Image Button -->
+<div class="text-center py-6">
+  <a href="{% url 'upload' %}">
+    <button class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-teal-500 group-hover:from-green-400 group-hover:to-teal-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-teal-300 dark:focus:ring-teal-800">
+      <span class="relative px-8 py-4 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
+        Upload New Image 2
+      </span>
+    </button>
+  </a>
+</div>

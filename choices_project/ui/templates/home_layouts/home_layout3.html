@@ -1,0 +1,28 @@
+<div class="w-[70%] mx-auto mt-10">
+  <div class="grid grid-cols-3 gap-6">
+    {% for image in images %}
+      <div class="relative overflow-hidden rounded-xl shadow-xl transform transition duration-300 group hover:rotate-6 hover:scale-105 hover:filter-none">
+        <div class="aspect-[4/3] bg-gray-200 flex items-center justify-center relative">
+          <!-- Image with blur and hover effects -->
+          <img src="{{ image.image.url }}" alt="Image {{ forloop.counter }}" class="object-cover w-full h-full transition-all duration-500 group-hover:blur-none filter blur-sm" />
+          
+          <!-- Caption with fade effect -->
+          <div class="absolute inset-0 bg-black bg-opacity-40 text-white flex items-center justify-center text-lg font-medium px-2 text-center opacity-100 group-hover:opacity-0 transition-opacity duration-500 ease-in-out">
+            {{ image.caption }}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Upload Image Button -->
+<div class="text-center py-6">
+  <a href="{% url 'upload' %}">
+    <button class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-yellow-400 to-red-500 group-hover:from-yellow-400 group-hover:to-red-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800">
+      <span class="relative px-8 py-4 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
+        Upload New Image 3
+      </span>
+    </button>
+  </a>
+</div>

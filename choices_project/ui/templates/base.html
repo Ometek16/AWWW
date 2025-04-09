@@ -1,0 +1,26 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="min-h-screen w-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choice?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&family=Playfair+Display:wght@600&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+    </style>
+</head>
+<body class="min-h-screen w-full flex flex-col bg-gradient-to-br {{ bg_gradient }} bg-fixed">
+    <!-- Header -->
+    {% include header %}
+
+    <!-- Main Content (Yielded from child templates) -->
+    <main class="flex-grow px-6 ">
+        {% block content %} {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    {% include footer %}
+   
+</body>
+</html>

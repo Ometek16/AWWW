@@ -1,0 +1,27 @@
+<div class="w-[70%] mx-auto mt-10">
+  <div class="grid grid-cols-3 gap-6">
+    {% for image in images %}
+      <div class="relative overflow-hidden rounded-xl shadow-xl transform transition duration-500 group hover:scale-110 hover:translate-y-4">
+        <div class="aspect-[4/3] bg-gray-200 flex items-center justify-center relative">
+          <!-- Image with zoom and slide transition -->
+          <img src="{{ image.image.url }}" alt="Image {{ forloop.counter }}" class="object-cover w-full h-full transition-all duration-500 group-hover:scale-110 group-hover:translate-y-4" />
+          
+          <!-- Caption with slide-up and fade effect -->
+          <div class="absolute inset-0 bg-black bg-opacity-40 text-white flex items-center justify-center text-lg font-medium px-2 text-center opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-opacity duration-500 ease-out">
+            {{ image.caption }}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+<!-- Supercharged Upload Image Button -->
+<div class="text-center py-6">
+  <a href="{% url 'upload' %}">
+    <button class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-500 group-hover:from-pink-500 group-hover:to-orange-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-orange-300 dark:focus:ring-orange-800">
+      <span class="relative px-8 py-4 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-transparent group-hover:dark:bg-transparent">
+        Upload New Image 4
+      </span>
+    </button>
+  </a>
+</div>
