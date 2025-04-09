@@ -1,2 +1,0 @@
-# AWWW
-AWWW Projects
