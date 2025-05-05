@@ -1,0 +1,506 @@
+{# mapping/templates/mapping/route_management.html #}
+
+{% extends "base.html" %}
+
+{% block title %}Routes on {{ background_image.name }}{% endblock %}
+
+{% block content %}
+    <h2>Manage Routes on "{{ background_image.name }}"</h2>
+
+    <div class="container-fluid">
+
+        <div class="row">
+            <div class="col-md-8">
+
+                <div id="imageCanvasContainer" style="position: relative; display: inline-block;">
+                    {% if background_image.image %}
+                        <img id="backgroundImage"
+                             src="{{ background_image.image.url }}"
+                             alt="{{ background_image.name }}"
+                             style="max-width: 100%; height: auto; display: block;"
+                             data-original-width="{{ background_image.image.width }}"
+                             data-original-height="{{ background_image.image.height }}">
+
+                        <canvas id="drawingCanvas"
+                                style="position: absolute; top: 0; left: 0; z-index: 1;"></canvas>
+                    {% else %}
+                        <p>No image available for this background.</p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <h3>Your Routes:</h3>
+
+                <div>
+                    <button id="createRouteButton">Create New Route</button>
+                    {# <button id="saveCurrentRouteButton" disabled>Save Current Route Changes</button> #}
+                    {# <button id="deleteCurrentRouteButton" disabled>Delete Current Route</button> #}
+                </div>
+
+                <ul id="routeList">
+                    {% if user_routes_on_image %}
+                        {% for route in user_routes_on_image %}
+                            <li id="route-item-{{ route.id }}">
+                                <strong>{{ route.name }}</strong>
+                                <button class="load-route-button" data-route-id="{{ route.id }}">Load</button>
+                                {# Delete button for route: <button class="delete-route-button" data-route-id="{{ route.id }}">Delete</button> #}
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li id="no-routes-message"><p>You have no routes defined on this image yet.</p></li>
+                    {% endif %}
+                </ul>
+
+                <hr>
+
+                <div id="pointControls" style="display: none;">
+                     <h3>Point Actions:</h3>
+                     <p>Click on the image to add points (in Create/Edit mode).</p>
+                     <p>In Edit mode, click near an existing point to delete it.</p>
+                </div>
+
+
+                <div id="statusArea">
+                    <p>Status: <span id="currentStatus">Ready. Select or create a route.</span></p>
+                    <p>Current Coords: <span id="currentCoords">-</span></p>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+    <p><a href="{% url 'mapping:homepage' %}">Back to Background Images</a></p>
+
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // --- Data from Backend (Embed Safely) ---
+        const backgroundImageId = {{ background_image.id }};
+        const backgroundImageSlug = "{{ background_image.slug }}";
+        const backgroundImageOriginalWidth = {{ background_image.image.width }};
+        const backgroundImageOriginalHeight = {{ background_image.image.height }};
+        const backgroundImageUrl = "{{ background_image.image.url }}";
+
+        // API URL generation functions
+        const apiBaseUrl = "/api/";
+        const routesApiUrl = apiBaseUrl + "routes/";
+        const specificRouteApiUrl = (routeId) => routesApiUrl + routeId + "/";
+        const routePointsApiUrl = (routeId) => specificRouteApiUrl(routeId) + "points/";
+        const specificRoutePointApiUrl = (routeId, pointId) => routePointsApiUrl(routeId) + pointId + "/";
+
+        // Get CSRF token from cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+
+        // --- DOM Elements ---
+        const canvas = document.getElementById('drawingCanvas');
+        const imageContainer = document.getElementById('imageCanvasContainer');
+        const backgroundImage = document.getElementById('backgroundImage');
+        const ctx = canvas.getContext('2d');
+        const currentCoordsSpan = document.getElementById('currentCoords');
+        const currentStatusSpan = document.getElementById('currentStatus');
+        const createRouteButton = document.getElementById('createRouteButton');
+        const routeList = document.getElementById('routeList');
+        const pointControlsDiv = document.getElementById('pointControls');
+        const noRoutesMessage = document.getElementById('no-routes-message');
+
+
+        // --- State Variables ---
+        let currentRoute = null;
+        let currentPoints = []; // Ordered by 'order' from backend
+        let mode = 'view'; // 'view', 'create', 'edit', 'loading'
+        const pointHitTolerance = 10; // Pixels radius for detecting point clicks
+
+
+        // --- Drawing Functions ---
+
+        function resizeCanvas() {
+            const imageRect = backgroundImage.getBoundingClientRect();
+            canvas.width = imageRect.width;
+            canvas.height = imageRect.height;
+            redrawCanvas();
+        }
+
+        function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (currentPoints.length > 0) {
+                ctx.strokeStyle = 'blue';
+                ctx.lineWidth = 2;
+                ctx.fillStyle = 'red';
+                const pointRadius = 5;
+
+                ctx.beginPath();
+
+                const firstPoint = currentPoints[0];
+                const firstX = firstPoint.x * canvas.width;
+                const firstY = firstPoint.y * canvas.height;
+
+                // Draw the first point (circle)
+                ctx.arc(firstX, firstY, pointRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.moveTo(firstX, firstY);
+
+                for (let i = 1; i < currentPoints.length; i++) {
+                    const point = currentPoints[i];
+                    const x = point.x * canvas.width;
+                    const y = point.y * canvas.height;
+
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, pointRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // --- Helper Functions ---
+
+        // Calculates the distance between two points (x1, y1) and (x2, y2)
+        function getDistance(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+
+        // --- API Interaction Functions ---
+
+        async function fetchAndLoadRoutePoints(routeId) {
+            currentStatusSpan.textContent = "Loading route points...";
+            mode = 'loading';
+            pointControlsDiv.style.display = 'none';
+
+            try {
+                const response = await fetch(routePointsApiUrl(routeId));
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error ${response.status}: ${errorText}`);
+                }
+
+                const pointsData = await response.json(); // Should be sorted by 'order'
+
+                // Fetch route details to get the name
+                const routeResponse = await fetch(specificRouteApiUrl(routeId));
+                if (!routeResponse.ok) {
+                     const errorText = await routeResponse.text();
+                     throw new Error(`HTTP error ${routeResponse.status} fetching route details: ${errorText}`);
+                }
+                const routeData = await routeResponse.json();
+
+                // Update state
+                currentRoute = routeData;
+                currentPoints = pointsData;
+
+                // Set mode and update UI
+                mode = 'edit'; // Assume loading means we are ready to edit
+                pointControlsDiv.style.display = 'block';
+                currentStatusSpan.textContent = `Route "${currentRoute.name}" loaded. Mode: Edit.`;
+
+                // Redraw the canvas
+                redrawCanvas();
+                console.log("Route points loaded:", currentPoints);
+                console.log("Current Route:", currentRoute);
+
+
+            } catch (error) {
+                console.error("Failed to load route points:", error);
+                currentStatusSpan.textContent = `Error loading route: ${error.message}`;
+                mode = 'view';
+                currentRoute = null;
+                currentPoints = [];
+                redrawCanvas();
+            }
+        }
+
+        async function addPointToRoute(relativeX, relativeY) {
+            if (!currentRoute || (mode !== 'create' && mode !== 'edit')) {
+                console.warn("Cannot add point: No route selected/creating or not in create/edit mode.");
+                currentStatusSpan.textContent = "Error: Cannot add point. Select or create route first.";
+                return;
+            }
+
+            currentStatusSpan.textContent = "Saving point...";
+
+            const pointData = {
+                x: relativeX,
+                y: relativeY
+            };
+
+            try {
+                const response = await fetch(routePointsApiUrl(currentRoute.id), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify(pointData)
+                });
+
+                if (!response.ok) {
+                     const errorText = await response.text();
+                     throw new Error(`HTTP error ${response.status}: ${errorText}`);
+                }
+
+                // On successful add, re-fetch all points to get updated order numbers
+                // This simplifies frontend state management regarding order.
+                await fetchAndLoadRoutePoints(currentRoute.id);
+
+                // Status message will be updated by fetchAndLoadRoutePoints on success
+                console.log("Point added successfully. Points re-fetched and canvas redrawn.");
+
+            } catch (error) {
+                console.error("Failed to add point:", error);
+                currentStatusSpan.textContent = `Error adding point: ${error.message}`;
+            }
+        }
+
+
+        async function deletePoint(routeId, pointId) {
+             if (!currentRoute || (mode !== 'edit')) {
+                console.warn("Cannot delete point: Not in edit mode.");
+                currentStatusSpan.textContent = "Error: Cannot delete point. Must be in edit mode.";
+                return;
+            }
+
+            // Optional: Confirmation dialog
+            if (!confirm("Are you sure you want to delete this point?")) {
+                currentStatusSpan.textContent = "Point deletion cancelled.";
+                return; // User cancelled
+            }
+
+            currentStatusSpan.textContent = "Deleting point...";
+            // Temporarily disable interactions?
+
+            try {
+                const response = await fetch(specificRoutePointApiUrl(routeId, pointId), {
+                    method: 'DELETE',
+                    headers: {
+                         'X-CSRFToken': csrftoken // Include CSRF token for DELETE requests
+                    }
+                    // DELETE requests typically don't have a body
+                });
+
+                if (!response.ok) {
+                     const errorText = await response.text();
+                     throw new Error(`HTTP error ${response.status}: ${errorText}`);
+                }
+
+                // On successful deletion, re-fetch all points for this route
+                // The backend perform_destroy handler will have renumbered them.
+                // Re-fetching gets the updated list and order numbers.
+                await fetchAndLoadRoutePoints(routeId);
+
+                // Status message will be updated by fetchAndLoadRoutePoints on success
+                console.log(`Point ${pointId} deleted successfully. Points re-fetched and canvas redrawn.`);
+
+
+            } catch (error) {
+                console.error("Failed to delete point:", error);
+                currentStatusSpan.textContent = `Error deleting point: ${error.message}`;
+            } finally {
+                // Re-enable interactions if they were disabled
+            }
+        }
+
+
+        async function startNewRouteCreation() {
+            const routeName = prompt("Please enter a name for your new route:");
+
+            if (!routeName || routeName.trim() === "") {
+                currentStatusSpan.textContent = "Route creation cancelled.";
+                return;
+            }
+
+            currentStatusSpan.textContent = `Creating new route "${routeName}"...`;
+            mode = 'loading';
+
+            const routeData = {
+                name: routeName.trim(),
+                background_image_id: backgroundImageId
+            };
+
+            try {
+                const response = await fetch(routesApiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    },
+                    body: JSON.stringify(routeData)
+                });
+
+                 if (!response.ok) {
+                     const errorText = await response.text();
+                     throw new Error(`HTTP error ${response.status}: ${errorText}`);
+                }
+
+                const newRoute = await response.json();
+
+                // Update state for new route creation
+                currentRoute = newRoute;
+                currentPoints = [];
+                mode = 'create'; // Now in create mode, ready to add points
+
+                // Update UI
+                pointControlsDiv.style.display = 'block';
+                currentStatusSpan.textContent = `Route "${newRoute.name}" created. Mode: Create. Click on image to add points.`;
+                redrawCanvas();
+
+                // Add the new route to the list displayed on the page
+                 const newRouteListItem = `
+                     <li id="route-item-${newRoute.id}">
+                        <strong>${newRoute.name}</strong>
+                        <button class="load-route-button" data-route-id="${newRoute.id}">Load</button>
+                     </li>
+                 `;
+                 if (noRoutesMessage) {
+                     noRoutesMessage.remove();
+                 }
+                 routeList.insertAdjacentHTML('beforeend', newRouteListItem);
+
+
+                console.log("New route created:", newRoute);
+
+            } catch (error) {
+                console.error("Failed to create route:", error);
+                currentStatusSpan.textContent = `Error creating route: ${error.message}`;
+                mode = 'view';
+                currentRoute = null;
+                currentPoints = [];
+                redrawCanvas();
+            }
+        }
+
+
+        // --- Event Listeners ---
+
+        // Update coordinates display on mouse move over the canvas
+        canvas.addEventListener('mousemove', function(event) {
+             const rect = canvas.getBoundingClientRect();
+             const clientX = event.clientX - rect.left;
+             const clientY = event.clientY - rect.top;
+
+             const relativeX = clientX / canvas.width;
+             const relativeY = clientY / canvas.height;
+
+             currentCoordsSpan.textContent = `${relativeX.toFixed(4)}, ${relativeY.toFixed(4)}`;
+        });
+
+        // Event listener for canvas clicks (for adding or deleting points)
+        canvas.addEventListener('click', function(event) {
+             if (!currentRoute || (mode !== 'create' && mode !== 'edit')) {
+                 console.log("Canvas clicked, but not in create/edit mode or no route selected.");
+                 currentStatusSpan.textContent = "Select or create a route to add/manage points.";
+                 return;
+             }
+
+             const rect = canvas.getBoundingClientRect();
+             const clickX = event.clientX - rect.left; // Click X relative to canvas
+             const clickY = event.clientY - rect.top; // Click Y relative to canvas
+
+             let pointClicked = null;
+
+             // In 'edit' mode, check if a point was clicked for deletion
+             if (mode === 'edit') {
+                 // Loop through existing points to see if click is near one
+                 for (const point of currentPoints) {
+                     // Convert point's relative coordinates to current canvas pixel coordinates
+                     const pointCanvasX = point.x * canvas.width;
+                     const pointCanvasY = point.y * canvas.height;
+
+                     // Calculate distance between click and point center
+                     const distance = getDistance(clickX, clickY, pointCanvasX, pointCanvasY);
+
+                     // Check if the click is within the hit tolerance radius
+                     if (distance <= pointHitTolerance) {
+                         pointClicked = point;
+                         break; // Found a point, stop checking
+                     }
+                 }
+             }
+
+             if (pointClicked) {
+                 // If a point was clicked (only checked in 'edit' mode)
+                 console.log(`Point clicked for deletion: ID=${pointClicked.id}, Order=${pointClicked.order}`);
+                 // Call the delete function
+                 deletePoint(currentRoute.id, pointClicked.id);
+
+             } else if (mode === 'create' || mode === 'edit') {
+                 // If no point was clicked (or if in 'create' mode), add a new point
+                 // Calculate relative coordinates based on the *current displayed image size*
+                 const relativeX = clickX / canvas.width;
+                 const relativeY = clickY / canvas.height;
+
+                 console.log(`Clicked to Add Point: Relative (${relativeX.toFixed(4)}, ${relativeY.toFixed(4)})`);
+
+                 // Call the function to add this point via API
+                 addPointToRoute(relativeX, relativeY);
+             }
+        });
+
+
+        // Event listener for resizing the window (re-draw canvas to fit new image size)
+        window.addEventListener('resize', resizeCanvas);
+
+
+        // --- Button Event Listeners ---
+
+        createRouteButton.addEventListener('click', function() {
+            startNewRouteCreation();
+        });
+
+        // Load Route Buttons (Event Delegation on the routeList ul)
+        routeList.addEventListener('click', function(event) {
+            const loadButton = event.target.closest('.load-route-button');
+            if (loadButton) {
+                const routeIdToLoad = loadButton.dataset.routeId;
+                console.log("Load Route button clicked for route ID:", routeIdToLoad);
+                fetchAndLoadRoutePoints(routeIdToLoad);
+            }
+            // Add similar logic here later for delete buttons if they are added to the list items
+        });
+
+
+        // --- Initial Setup ---
+        backgroundImage.onload = function() {
+            console.log("Background image loaded. Setting up canvas.");
+            resizeCanvas();
+            currentStatusSpan.textContent = "Image loaded. Select or create a route.";
+        };
+
+        if (backgroundImage.complete) {
+             console.log("Background image already complete. Setting up canvas.");
+             backgroundImage.onload();
+        }
+
+    </script>
+
+    {# JSON data from backend - currently only used for initial list display #}
+    <script id="userRoutesJson" type="application/json">
+        {{ user_routes_on_image|safe|escapejs }}
+    </script>
+
+{% endblock %}

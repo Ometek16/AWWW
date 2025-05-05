@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Background Image{% endblock %}
+
+{% block content %}
+    <h2>Upload a New Background Image</h2>
+
+    {# IMPORTANT: Use enctype="multipart/form-data" for file uploads #}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }} {# Renders all form fields wrapped in <p> tags #}
+        <button type="submit">Upload Image</button>
+    </form>
+
+    <p><a href="{% url 'mapping:homepage' %}">Cancel</a></p>
+
+{% endblock %}

@@ -1,0 +1,41 @@
+{# templates/base.html #}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Route Mapper{% endblock %}</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        nav form { display: inline; margin: 0; padding: 0; } /* Style for logout form */
+        nav form button { background: none; border: none; cursor: pointer; color: blue; text-decoration: underline; padding: 0; font: inherit;} /* Style button like a link */
+        nav a { margin-right: 15px; }
+        .errorlist { color: red; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{% url 'mapping:homepage' %}">Home</a> {# Use named URL for homepage #}
+        {% if user.is_authenticated %}
+            <a href="{% url 'mapping:user_routes_list' %}">My Routes</a> {# Updated Link! #}
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit">Logout ({{ user.username }})</button>
+            </form>
+        {% else %}
+            <a href="{% url 'login' %}">Login</a> {# Use named URL for login #}
+        {% endif %}
+    </nav>
+
+    <hr>
+
+    {% block content %}
+        <!-- Content from child templates goes here -->
+    {% endblock %}
+
+    {% block extra_js %}
+        <!-- Optional: Add page-specific JavaScript here -->
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,30 @@
+{# mapping/templates/mapping/user_routes_list.html #}
+
+{% extends "base.html" %}
+
+{% block title %}My Routes{% endblock %}
+
+{% block content %}
+    <h2>My Routes</h2>
+
+    {% if user_routes %}
+        <ul>
+            {% for route in user_routes %}
+                <li>
+                    {# Link to the specific route management page for this route's image #}
+                    <a href="{% url 'mapping:routes_on_image' image_slug=route.background_image.slug %}">
+                        <strong>{{ route.name }}</strong> on "{{ route.background_image.name }}"
+                    </a>
+                    (Created: {{ route.created_at|date:"Y-m-d H:i" }})
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>You have not created any routes yet.</p>
+        {# Optional: Add link to homepage to find an image to create one on #}
+        <p><a href="{% url 'mapping:homepage' %}">Explore background images</a> to define your first route.</p>
+    {% endif %}
+
+    <p><a href="{% url 'mapping:homepage' %}">Back to Background Images</a></p>
+
+{% endblock %}

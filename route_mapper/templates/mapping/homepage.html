@@ -1,0 +1,68 @@
+{# mapping/templates/mapping/homepage.html #}
+
+{% extends "base.html" %}
+
+{% block title %}Homepage - Route Mapper{% endblock %}
+
+{% block content %}
+    <h2>Welcome to Route Mapper!</h2>
+    <p>Define and view routes on background images.</p>
+
+    <h3>Explore Background Images</h3>
+
+    {% if user.is_authenticated %}
+        <p><a href="{% url 'mapping:add_background_image' %}">Add New Background Image</a></p>
+    {% endif %}
+
+    <div class="image-grid">
+        {% if random_images %}
+            {% for image in random_images %}
+                <div class="image-item">
+                    {# Link to the new route management page for this image #}
+                    <a href="{% url 'mapping:routes_on_image' image_slug=image.slug %}"> {# Updated! #}
+                        {# Display a small version of the image #}
+                        {% if image.image %}
+                            <img src="{{ image.image.url }}" alt="{{ image.name }}" style="max-width: 200px; height: auto;">
+                        {% else %}
+                            <p>[No Image]</p>
+                        {% endif %}
+                        <p>{{ image.name }}</p>
+                    </a>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No background images available yet. {% if user.is_authenticated %}Why not <a href="{% url 'mapping:add_background_image' %}">add one</a>?{% endif %}</p>
+        {% endif %}
+    </div>
+
+    {# Optional: Add some basic grid CSS #}
+    <style>
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); /* Responsive grid */
+            gap: 20px; /* Space between grid items */
+            margin-top: 20px;
+        }
+        .image-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+            word-wrap: break-word; /* Prevent long names overflowing */
+        }
+        .image-item img {
+            display: block;
+            max-width: 100%; /* Ensure image fits within its container */
+            height: auto;
+            margin: 0 auto 10px auto; /* Center image */
+        }
+        .image-item a {
+            text-decoration: none;
+            color: inherit;
+        }
+        .image-item a:hover {
+            color: blue;
+        }
+    </style>
+
+{% endblock %}
+
