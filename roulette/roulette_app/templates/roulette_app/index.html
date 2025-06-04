@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skibidi Ruletka</title>
+    <link rel="stylesheet" href="{% static 'roulette_app/css/style.css' %}">
+</head>
+<body>
+    <div class="main-content">
+        <div class="recent-rolls-column">
+            <h2>Recent Option 1 Rolls</h2>
+            <table id="recent-ones-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="2">No Option 1 rolls yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="container">
+            <h1>Welcome to Roulette!</h1>
+
+            {% if user.is_authenticated %}
+                <p>Hello, {{ user.username }}!</p>
+                <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit">Logout</button>
+                </form>
+
+                <div id="roulette-game">
+                    <div class="roulette-container">
+                        <div class="wheel" id="roulette-wheel">
+                            <div class="segment" data-value="1"><span>1</span></div>
+                            <div class="segment" data-value="2"><span>2</span></div>
+                            <div class="segment" data-value="3"><span>3</span></div>
+                            <div class="segment" data-value="4"><span>4</span></div>
+                            <div class="segment" data-value="5"><span>5</span></div>
+                        </div>
+                        <div class="pointer"></div>
+                    </div>
+
+                    <button id="spin-button">Spin the Wheel!</button>
+                    <p id="result-display">Click 'Spin the Wheel!'</p>
+                </div>
+
+                <script>
+                    const currentUserId = {{ user.id }};
+                    const currentUsername = "{{ user.username }}";
+                    console.log(`Current User ID: ${currentUserId}, Username: ${currentUsername}`);
+                </script>
+
+            {% else %}
+                <p>Please <a href="{% url 'login' %}">login</a> to play the game.</p>
+                <p>New user? <a href="{% url 'roulette_app:register' %}">Register here</a>.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Container for bottom-right notifications (e.g., for rolling a '5') #}
+    <div id="notification-container"></div>
+
+    {# NEW: Container for bottom-left notifications (e.g., for rolling a '2') #}
+    <div id="left-notification-container"></div>
+
+    <script src="{% static 'roulette_app/js/roulette.js' %}"></script>
+</body>
+</html>
