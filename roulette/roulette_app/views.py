@@ -10,6 +10,7 @@ import traceback
 import datetime
 from django.utils.timezone import now
 from .forms import CustomUserCreationForm
+import asyncio
 
 def index(request):
     return render(request, 'roulette_app/index.html')
@@ -53,7 +54,7 @@ def sse_events(request):
                 last_check_time = roll.timestamp
 
             yield 'event: heartbeat\ndata: {}\n\n'
-            time.sleep(1)
+            await asyncio.sleep(1)  # async non-blocking sleep
 
     response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
     response['Cache-Control'] = 'no-cache'
