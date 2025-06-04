@@ -9,16 +9,31 @@ console_command = '/code/manage.py shell'
 
 [build]
 
-[env]
-  PORT = '8000'
+# [env] # Możesz zostawić tę sekcję, jeśli PORT jest gdzieś używany, ale dla Gunicorna nie jest konieczny,
+PORT = '8000' # bo bindujesz go w CMD. Możesz go usunąć dla czystości.
 
-[http_service]
-  internal_port = 8000
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+
+# NOWA I POPRAWIONA SEKCJA `[[services]]` DLA HTTP/HTTPS I WEBSOCKETÓW
+# Ta sekcja musi być dodana lub zastąpić `[http_service]`
+[[services]]
+  internal_port = 8000 # Port, na którym Gunicorn nasłuchuje w kontenerze
+  protocol = "tcp"     # <--- KLUCZOWE: WŁĄCZA PRZEKAZYWANIE RUCHU TCP (dla WebSocketów)
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 1000
+  # Zewnętrzne porty, na których Fly.io nasłuchuje
+  [[services.ports]]
+    port = 80
+    handlers = ["http"] # Obsługa HTTP (przekierowanie na HTTPS)
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"] # Obsługa HTTPS (TLS) i HTTP (dla przekierowania z portu 80)
+  # Kontrola zdrowia (health checks) dla TCP
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "1s"
 
 [[vm]]
   memory = '1gb'

@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const rouletteWheel = document.getElementById('roulette-wheel');
         const resultDisplay = document.getElementById('result-display');
         const recentOnesTableBody = document.querySelector('#recent-ones-table tbody');
-        const notificationContainer = document.getElementById('notification-container'); // For Step 11
-        const leftNotificationContainer = document.getElementById('left-notification-container'); // NEW: For Step 13
+        const notificationContainer = document.getElementById('notification-container');
+        const leftNotificationContainer = document.getElementById('left-notification-container');
 
         let isWheelAnimating = false; // Flag for *local* wheel animation
 
@@ -153,83 +153,111 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(error => console.error('Error fetching recent ones:', error));
 
+        // --- Step 11: Show Global Pop-up Notification (auto-dismissing) ---
+        function showNotification(message) {
+            const notificationDiv = document.createElement('div');
+            notificationDiv.classList.add('notification');
+            notificationDiv.textContent = message;
+            notificationContainer.appendChild(notificationDiv);
+
+            setTimeout(() => {
+                notificationDiv.remove();
+            }, 4500);
+        }
+
         // --- Step 13: Show Global Pop-up Notification for Hand-Closed ('2's) ---
         function showHandCloseNotification(message) {
             const notificationDiv = document.createElement('div');
-            notificationDiv.classList.add('hand-close-notification'); // Specific class for styling
+            notificationDiv.classList.add('hand-close-notification');
             notificationDiv.innerHTML = `
                 <button class="close-btn">×</button>
                 <p>${message}</p>
-            `; // Include the close button directly
+            `;
 
-            // Add event listener to the close button within this notification
             notificationDiv.querySelector('.close-btn').addEventListener('click', () => {
-                notificationDiv.remove(); // Remove the notification when clicked
+                notificationDiv.remove();
             });
 
             leftNotificationContainer.appendChild(notificationDiv);
-            // No setTimeout here, as it's hand-closed!
         }
 
-        // --- Step 9, 10 & 11: Server-Sent Events (SSE) Client ---
-        const eventSource = new EventSource('/sse/events/');
+        // --- ZMIANA DLA KROKU D: Zastąpienie SSE WebSocketem ---
+        // Użyj 'ws://' lub 'wss://' w zależności od tego, czy używasz HTTPS
+        // window.location.host automatycznie pobierze "127.0.0.1:8000"
+        const websocket = new WebSocket('wss://' + window.location.host + '/ws/roulette/');
 
-        eventSource.onopen = () => {
-            console.log('SSE connection opened.');
+        websocket.onopen = () => {
+            console.log('WebSocket connection opened.');
         };
 
-        eventSource.onmessage = (event) => { /* ... */ }; // Generic handler, no specific action
-
-        eventSource.addEventListener('heartbeat', (event) => { /* ... */ }); // Heartbeat, no specific action
-
-        eventSource.addEventListener('roll_result', (event) => {
-            console.log('Roll result event received:', event.data);
+        // ZMIANA DLA KROKU D: Teraz wszystkie wiadomości przychodzą przez onmessage
+        websocket.onmessage = (event) => {
+            console.log('WebSocket message received:', event.data);
             const data = JSON.parse(event.data);
 
-            // Personal Result Display Update (from Step 9, and further refined)
-            if (data.user_id !== currentUserId) {
-                console.log(`Remote spin detected: ${data.username} rolled ${data.rolled_number}.`);
-            } else {
-                console.log(`Own spin detected via SSE: ${data.username} rolled ${data.rolled_number}. Already handled locally.`);
-            }
+            if (data.type === 'roulette_message') {
+                const rollData = data.message;
+                console.log('Parsed rollData:', rollData);
 
-            // Update Recent "1" Rolls List (for ALL clients) (from Step 10)
-            if (data.rolled_number === 1) {
-                const tr = document.createElement('tr');
-                const userTd = document.createElement('td');
-                const timeTd = document.createElement('td');
-
-                userTd.textContent = data.username;
-                timeTd.textContent = new Date(data.timestamp).toLocaleTimeString();
-
-                tr.appendChild(userTd);
-                tr.appendChild(timeTd);
-
-                recentOnesTableBody.prepend(tr);
-
-                if (recentOnesTableBody.children.length > 1 && recentOnesTableBody.lastChild.textContent === 'No Option 1 rolls yet.') {
-                    recentOnesTableBody.lastChild.remove();
+                if (rollData.user_id !== currentUserId) {
+                    console.log(`Remote spin detected: ${rollData.username} rolled ${rollData.rolled_number}.`);
+                } else {
+                    console.log(`Own spin detected via WebSocket: ${rollData.username} rolled ${rollData.rolled_number}. Already handled locally.`);
                 }
 
-                while (recentOnesTableBody.children.length > 10) {
-                    recentOnesTableBody.removeChild(recentOnesTableBody.lastChild);
+                // === KROK 1: SPRAWDŹ, CZY WARUNEK JEST SPEŁNIONY ===
+                // ==================================================
+                if (rollData.rolled_number === 1) {
+                    console.log('Rolled a 1! Attempting to update scoreboard.');
+                    // Poniżej też dodamy logi
+                    const tr = document.createElement('tr');
+                    const userTd = document.createElement('td');
+                    const timeTd = document.createElement('td');
+
+                    userTd.textContent = rollData.username;
+                    timeTd.textContent = new Date(rollData.timestamp).toLocaleTimeString();
+
+                    tr.appendChild(userTd);
+                    tr.appendChild(timeTd);
+
+                    recentOnesTableBody.prepend(tr);
+
+                    if (recentOnesTableBody.children.length > 1 && recentOnesTableBody.lastChild.textContent === 'No Option 1 rolls yet.') {
+                        recentOnesTableBody.lastChild.remove();
+                    }
+
+                    while (recentOnesTableBody.children.length > 10) {
+                        recentOnesTableBody.removeChild(recentOnesTableBody.lastChild);
+                    }
+                  // === KROK 2: SPRAWDŹ, CZY TABLICA SIĘ AKTUALIZUJE ===
+                  console.log("Zawartość tablicy po potencjalnej aktualizacji:");
+                  for (let i = 0; i < recentOnesTableBody.children.length; i++) {
+                      console.log(i, recentOnesTableBody.children[i].textContent);
+                  }
+                }
+
+                // Show Global Pop-up Notification for "5"s
+                if (rollData.rolled_number === 5) {
+                    console.log('Rolled a 5! Attempting to show auto-dismissing popup.');
+                    showNotification(`${rollData.username} rolled a 5!`);
+                }
+                 // Show Global Pop-up Notification for "2"s
+                if (rollData.rolled_number === 2) {
+                    console.log('Rolled a 2! Attempting to show hand-closed popup.');
+                    showHandCloseNotification(`${rollData.username} rolled a 2!`);
                 }
             }
+        };
 
-            // Step 11: Show Global Pop-up Notification for "5"s (for ALL clients)
-            if (data.rolled_number === 5) {
-                showNotification(`${data.username} rolled a 5!`);
-            }
+        websocket.onclose = (event) => {
+            console.log('WebSocket connection closed:', event.code, event.reason);
+            // Możesz tutaj zaimplementować logikę ponownego łączenia
+            // np. setTimeout(() => new WebSocket(...), 3000);
+        };
 
-            // NEW: Step 13: Show Global Pop-up Notification for "2"s (for ALL clients)
-            if (data.rolled_number === 2) {
-                showHandCloseNotification(`${data.username} rolled a 2!`);
-            }
-        });
-
-        eventSource.onerror = (error) => {
-            console.error('SSE Error:', error);
-            eventSource.close();
+        websocket.onerror = (error) => {
+            console.error('WebSocket Error:', error);
+            // Jeśli wystąpi błąd, onclose zazwyczaj też zostanie wywołany.
         };
 
     } else {
@@ -237,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- Show Global Pop-up Notification (from Step 11, moved outside DOMContentLoaded for clarity) ---
+// --- Show Global Pop-up Notification (auto-dismissing) ---
 function showNotification(message) {
     const notificationContainer = document.getElementById('notification-container');
     const notificationDiv = document.createElement('div');
@@ -247,5 +275,5 @@ function showNotification(message) {
 
     setTimeout(() => {
         notificationDiv.remove();
-    }, 4500); // Matches CSS animation duration
+    }, 4500);
 }
