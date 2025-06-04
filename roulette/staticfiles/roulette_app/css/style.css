@@ -1,0 +1,279 @@
+/* Basic reset or body styling for visibility */
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+    display: flex; /* Make body a flex container to center main-content */
+    flex-direction: column;
+    align-items: center; /* Center horizontally */
+    min-height: 100vh;
+}
+
+/* Outer wrapper for the roulette game and recent rolls list columns */
+.main-content {
+    display: flex; /* Arrange roulette and list side-by-side */
+    justify-content: center; /* Center the entire content block */
+    align-items: flex-start; /* Align columns to the top */
+    gap: 40px; /* Space between the two columns */
+    padding: 20px;
+    width: 100%;
+    max-width: 1200px; /* Max width for the whole content area */
+    box-sizing: border-box; /* Include padding in element's total width */
+}
+
+/* Styling for the "Recent Option 1 Rolls" column */
+.recent-rolls-column {
+    background-color: #f8f9fa; /* Light background */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    min-width: 250px; /* Minimum width for the column */
+    max-width: 300px; /* Maximum width for the column */
+    text-align: left; /* Align text within this column */
+    border-left: 5px solid #007bff; /* Blue accent border */
+}
+
+.recent-rolls-column h2 {
+    color: #007bff;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+#recent-ones-list {
+    list-style: none; /* Remove default bullet points */
+    padding: 0;
+    margin: 0;
+}
+
+#recent-ones-list li {
+    padding: 8px 0;
+    border-bottom: 1px dashed #e9ecef; /* Subtle separator */
+    font-size: 0.95em;
+    color: #555;
+}
+
+#recent-ones-list li:last-child {
+    border-bottom: none; /* No border on the last item */
+}
+
+.container {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 800px;
+    width: 100%;
+}
+
+h1 {
+    color: #0056b3;
+}
+
+#roulette-game {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.roulette-container {
+    position: relative;
+    width: 350px;
+    height: 350px;
+    border-radius: 50%;
+    border: 5px solid #333;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+    background-color: #eee;
+    overflow: hidden;
+}
+
+.wheel {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(
+        #FF6347 0deg 72deg,
+        #4682B4 72deg 144deg,
+        #3CB371 144deg 216deg,
+        #FFD700 216deg 288deg,
+        #9370DB 288deg 360deg
+    );
+    transition: transform 4s cubic-bezier(0.25, 0.1, 0.25, 1);
+    transform-origin: 50% 50%;
+    box-sizing: border-box;
+}
+
+
+.pointer {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-top: 40px solid #C0392B; /* Red triangle */
+    z-index: 10; /* Ensure pointer is on top of wheel */
+}
+
+#spin-button {
+    padding: 15px 30px;
+    font-size: 1.2em;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+}
+
+#spin-button:hover {
+    background-color: #218838;
+}
+
+#spin-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+#result-display {
+    font-size: 1.5em;
+    margin-top: 20px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.segment {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    color: white;
+    font-weight: bold;
+    font-size: 1.5em;
+    text-align: center;
+    line-height: 30px;
+    user-select: none;
+}
+
+/* Pozycje i rotacje etykiet (liczone dla środka segmentu) */
+.segment[data-value="1"] {
+    transform: rotate(306deg) translate(145px);
+}
+
+.segment[data-value="2"] {
+    transform: rotate(18deg) translate(140px);
+}
+.segment[data-value="3"] {
+    transform: rotate(90deg) translate(140px);
+}
+.segment[data-value="4"] {
+    transform: rotate(162deg) translate(140px);
+}
+.segment[data-value="5"] {
+    transform: rotate(234deg) translate(140px);
+}
+
+
+#result-display {
+    font-size: 1.5em;
+    margin-top: 20px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+#notification-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000; /* Ensure it's on top of other content */
+}
+
+.notification {
+    background-color: #f0f8ff; /* AliceBlue */
+    color: #333;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    opacity: 0; /* Start hidden */
+    transform: translateY(20px); /* Start slightly below */
+    animation: fadeInOut 5s forwards; /* Animation for 5 seconds */
+    max-width: 300px;
+    text-align: center;
+    border-left: 5px solid #28a745; /* Green border for success */
+}
+
+/* Keyframes for the fade-in/fade-out notification animation */
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    10% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    90% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
+#left-notification-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px; /* Position on the left */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.hand-close-notification { /* This is for the hand-closed (e.g., '2' roll) notification */
+    background-color: #fff3cd; /* Light yellow background */
+    color: #664d03; /* Darker text color for contrast */
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    max-width: 300px;
+    text-align: center;
+    border-left: 5px solid #ffc107; /* Orange/yellow border */
+    position: relative; /* Needed for positioning the close button */
+    /* No animation properties for automatic dismissal */
+}
+
+.hand-close-notification .close-btn {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    color: #aaa; /* Light grey 'x' */
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: 1; /* Ensure 'x' is vertically centered */
+}
+
+.hand-close-notification .close-btn:hover {
+    color: #333; /* Darker 'x' on hover */
+}
