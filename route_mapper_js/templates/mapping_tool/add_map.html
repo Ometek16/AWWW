@@ -1,0 +1,13 @@
+<!-- templates/mapping_tool/add_map.html -->
+{% extends "base.html" %}
+
+{% block title %}Dodaj Nową Mapę{% endblock %}
+
+{% block content %}
+<h2>Dodaj Nową Mapę</h2>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Dodaj Mapę</button>
+</form>
+{% endblock %}

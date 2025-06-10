@@ -1,0 +1,91 @@
+<!-- templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Board Crafter{% endblock %}</title>
+    <!-- Prosty Bootstrap dla wyglądu -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Możemy dodać własny CSS później -->
+    <!-- <link rel="stylesheet" href="{% static 'css/style.css' %}"> -->
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="{% url 'home' %}">Board Crafter</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mr-auto"> <!-- Dodajemy mr-auto dla elementów po lewej -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'home' %}">Strona Główna</a>
+                </li>
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'mapping_tool:add_map' %}">Dodaj Mapę</a> <!-- Nowy link -->
+                </li>
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav ml-auto"> <!-- ml-auto już było -->
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <span class="navbar-text mr-2">Witaj, {{ user.username }}!</span> <!-- Dodałem mr-2 dla odstępu -->
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">Wyloguj</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">Zaloguj</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'signup' %}">Zarejestruj</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}
+        <!-- Treść strony będzie tutaj -->
+        {% endblock %}
+    </div>
+
+    <!-- Zewnętrzne biblioteki JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <!-- Globalny helper CSRF (jeśli używany w wielu miejscach) -->
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const CSRF_TOKEN = getCookie('csrftoken'); // Definiujemy globalnie
+    </script>
+
+    {% block scripts %}
+    {# Ten blok będzie nadpisywany przez szablony dziedziczące, np. create_board.html #}
+    {# Możesz tu umieścić globalne skrypty dla całej aplikacji, jeśli są potrzebne PO CSRF_TOKEN #}
+    {% endblock %}
+</body>
+</html>

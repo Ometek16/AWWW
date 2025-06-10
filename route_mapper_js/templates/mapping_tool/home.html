@@ -1,0 +1,66 @@
+<!-- templates/mapping_tool/home.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Strona Główna - Board Crafter{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">Witaj w Board Crafter!</h1>
+    <p class="lead">Twórz interaktywne plansze na podstawie własnych map.</p>
+    {% if user.is_authenticated %}
+        <hr class="my-4">
+        <a class="btn btn-success btn-lg" href="{% url 'mapping_tool:create_board' %}" role="button">Stwórz Nową Planszę</a>
+        <a class="btn btn-primary btn-lg ml-2" href="{% url 'mapping_tool:add_map' %}" role="button">Dodaj Nową Mapę</a>
+    {% else %}
+        <p>Aby zacząć, <a href="{% url 'login' %}">zaloguj się</a> lub <a href="{% url 'signup' %}">zarejestruj</a>.</p>
+    {% endif %}
+</div>
+
+<!-- templates/mapping_tool/home.html (fragment) -->
+{% if user.is_authenticated and user_boards %}
+<div class="mt-5">
+    <h3>Twoje Ostatnie Plansze</h3>
+    <div class="list-group">
+        {% for board_item in user_boards|slice:":5" %} {# Zmieniono nazwę zmiennej pętli dla jasności #}
+            <a href="{% url 'mapping_tool:play_board' board_id=board_item.id %}" class="list-group-item list-group-item-action"> 
+                {{ board_item.name }} (Mapa: {{ board_item.map_reference.title }}, Siatka: {{ board_item.grid_rows }}x{{ board_item.grid_cols }})
+                <small class="text-muted float-right">Ost. aktualizacja: {{ board_item.updated_at|timesince }} temu</small>
+            </a>
+        {% endfor %}
+        {# Możesz dodać link "Zobacz wszystkie moje plansze" jeśli masz taką stronę #}
+    </div>
+</div>
+{% endif %}
+
+<div class="mt-5">
+    <h3>Ostatnio Dodane Mapy</h3>
+    {% if maps %}
+    <div class="row">
+        {% for map_item in maps %}
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                {% if map_item.image %}
+                <img src="{{ map_item.image.url }}" class="card-img-top" alt="{{ map_item.title }}" style="height: 200px; object-fit: cover;">
+                {% else %}
+                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                    <span class="text-white">Brak obrazka</span>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ map_item.title }}</h5>
+                    <p class="card-text"><small>Dodane przez: {{ map_item.uploader.username }}</small></p>
+                    {% if user.is_authenticated %}
+                         {# Możemy dodać przycisk "Użyj tej mapy do stworzenia planszy" #}
+                         <a href="{% url 'mapping_tool:create_board' %}?map_id={{ map_item.id }}" class="btn btn-sm btn-info">Użyj tej mapy</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>Brak map do wyświetlenia. <a href="{% url 'mapping_tool:add_map' %}">Dodaj pierwszą mapę!</a></p>
+    {% endif %}
+</div>
+{% endblock %}

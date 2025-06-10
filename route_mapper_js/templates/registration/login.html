@@ -1,0 +1,14 @@
+<!-- templates/registration/login.html -->
+{% extends "base.html" %}
+
+{% block title %}Logowanie{% endblock %}
+
+{% block content %}
+<h2>Logowanie</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Zaloguj</button>
+</form>
+<p class="mt-2">Nie masz konta? <a href="{% url 'signup' %}">Zarejestruj się tutaj</a>.</p>
+{% endblock %}
